@@ -1,0 +1,97 @@
+name: Build Custom Iosevka Font
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout own repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for new Iosevka tag
+        id: check-tag
+        run: |
+          LATEST_TAG=$(curl -s https://api.github.com/repos/be5invis/Iosevka/tags | jq -r '.[0].name')
+          echo "Latest Iosevka tag: $LATEST_TAG"
+          LATEST_VERSION=$(echo $LATEST_TAG | sed 's/v//')
+          
+          CURRENT_ARCHIVE=$(ls IosevkaMyCustom_*.zip 2>/dev/null | head -n 1)
+          if [ -n "$CURRENT_ARCHIVE" ]; then
+            CURRENT_VERSION=$(echo $CURRENT_ARCHIVE | sed -E 's/IosevkaMyCustom_(.*)\.zip/\1/')
+          else
+            CURRENT_VERSION=""
+          fi
+          
+          if [ -z "$CURRENT_VERSION" ] || [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]; then
+            echo "NEW_TAG=true" >> $GITHUB_OUTPUT
+            echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "No new version to build."
+          fi
+
+      - name: Setup Node.js
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install ttfautohint
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ttfautohint
+
+      - name: Clone Iosevka repository
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          git clone --depth 1 --branch ${{ steps.check-tag.outputs.LATEST_TAG }} https://github.com/be5invis/Iosevka.git
+
+      - name: Copy private-build-plans.toml
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: cp private-build-plans.toml Iosevka/
+
+      - name: Build custom font
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        working-directory: Iosevka
+        run: |
+          npm install
+          npm run build -- ttf::IosevkaCustom
+
+      - name: Create archive
+        id: latest-archive
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          VERSION=$(echo ${{ steps.check-tag.outputs.LATEST_TAG }} | sed 's/v//')
+          (cd Iosevka/dist/IosevkaCustom && zip -8 -r ../../../IosevkaMyCustom_${VERSION}.zip *)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Manage archives
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          mkdir -p archive
+          mv IosevkaMyCustom_*.zip archive/
+          mv archive/IosevkaMyCustom_${{ steps.latest-archive.outputs.VERSION }}.zip ./
+
+          cd archive
+          ls -t IosevkaMyCustom_*.zip | tail -n +10 | xargs rm -f 2>/dev/null
+          cd ..
+
+      - name: Commit and push changes
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Github Actions"
+          git add IosevkaMyCustom_*.zip archive
+          git commit -m "Add new Iosevka custom build ${{ steps.check-tag.outputs.LATEST_TAG }}"
+          git pull --rebase origin main
+          git push
+
+      - name: Cleanup
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: rm -rf Iosevka
