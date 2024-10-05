@@ -82,6 +82,10 @@ jobs:
           ls -t IosevkaMyCustom_*.zip | tail -n +10 | xargs rm -f 2>/dev/null
           cd ..
 
+      - name: Cleanup
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: rm -rf Iosevka
+
       - name: Commit and push changes
         if: steps.check-tag.outputs.NEW_TAG == 'true'
         run: |
@@ -90,7 +94,3 @@ jobs:
           git add .
           git commit -m "Add new Iosevka custom build ${{ steps.check-tag.outputs.LATEST_TAG }}"
           git push
-
-      - name: Cleanup
-        if: steps.check-tag.outputs.NEW_TAG == 'true'
-        run: rm -rf Iosevka
