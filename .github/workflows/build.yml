@@ -87,9 +87,8 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Github Actions"
-          git add IosevkaMyCustom_*.zip archive
+          git add .
           git commit -m "Add new Iosevka custom build ${{ steps.check-tag.outputs.LATEST_TAG }}"
-          git pull --rebase origin main
           git push
 
       - name: Cleanup
