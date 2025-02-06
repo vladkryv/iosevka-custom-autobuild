@@ -81,7 +81,6 @@ jobs:
 
           cd archive
           ls -t IosevkaMyCustom_*.zip | tail -n +10 | xargs rm -f 2>/dev/null
-          cd ..
 
       - name: Cleanup
         if: steps.check-tag.outputs.NEW_TAG == 'true'
