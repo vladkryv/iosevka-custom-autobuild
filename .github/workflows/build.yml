@@ -7,7 +7,7 @@ on:
 
 jobs:
   check-and-build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Check for new Iosevka tag
         id: check-tag
@@ -45,8 +45,8 @@ jobs:
       - name: Install ttfautohint
         if: steps.check-tag.outputs.NEW_TAG == 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ttfautohint
+          brew update
+          brew install ttfautohint
 
       - name: Clone Iosevka repository
         if: steps.check-tag.outputs.NEW_TAG == 'true'
