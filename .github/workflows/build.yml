@@ -12,6 +12,8 @@ jobs:
       - name: Check for new Iosevka tag
         id: check-tag
         run: |
+          echo $(curl -s https://api.github.com/repos/be5invis/Iosevka/tags)
+          echo $(curl -s https://api.github.com/repos/${{ github.repository }}/contents/)
           LATEST_TAG=$(curl -s https://api.github.com/repos/be5invis/Iosevka/tags | jq -r '.[0].name')
           echo "Latest Iosevka tag: $LATEST_TAG"
           LATEST_VERSION=$(echo $LATEST_TAG | sed 's/v//')
