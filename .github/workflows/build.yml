@@ -44,9 +44,7 @@ jobs:
 
       - name: Install ttfautohint
         if: steps.check-tag.outputs.NEW_TAG == 'true'
-        run: |
-          brew update
-          brew install ttfautohint
+        run: brew install ttfautohint
 
       - name: Clone Iosevka repository
         if: steps.check-tag.outputs.NEW_TAG == 'true'
