@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
+    inputs:
+      always:
+        description: 'Build even without new version'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   check-and-build:
@@ -23,7 +29,7 @@ jobs:
             CURRENT_VERSION=""
           fi
 
-          if [ -z "$CURRENT_VERSION" ] || [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]; then
+          if [ -z "$CURRENT_VERSION" ] || [ "$LATEST_VERSION" != "$CURRENT_VERSION" ] || [ "${{ inputs.always }}" == "true" ]; then
             echo "NEW_TAG=true" >> $GITHUB_OUTPUT
             echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
           else
@@ -67,6 +73,7 @@ jobs:
         if: steps.check-tag.outputs.NEW_TAG == 'true'
         run: |
           VERSION=$(echo ${{ steps.check-tag.outputs.LATEST_TAG }} | sed 's/v//')
+          rm -f IosevkaMyCustom_${VERSION}.zip
           (cd Iosevka/dist/IosevkaCustom && zip -8 -r ../../../IosevkaMyCustom_${VERSION}.zip *)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
