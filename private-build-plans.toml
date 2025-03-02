@@ -7,6 +7,7 @@ noCvSs = true
 [buildPlans.IosevkaCustom.variants.design]
 capital-d = "more-rounded-serifless"
 capital-g = "toothless-corner-serifless-hooked"
+capital-j = "serifed-symmetric"
 capital-q = "crossing"
 i = "hooky"
 l = "serifed-semi-tailed"
