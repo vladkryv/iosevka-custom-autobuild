@@ -8,17 +8,13 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
 
       - name: Get version from package.json
+        working-directory: Iosevka
         id: get-version
         run: |
           VERSION="$(jq -r '.version' package.json)-dev"
