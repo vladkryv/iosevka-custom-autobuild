@@ -40,17 +40,10 @@ jobs:
           npm install
           npm run build -- ttf::IosevkaCustom
 
-      - name: Create ZIP archive
-        id: make-archive
-        run: |
-          ARCH="IosevkaCustom_${{ steps.get-version.outputs.VERSION }}.zip"
-          (cd Iosevka/dist/IosevkaCustom && zip -8 -r ../../../"$ARCH" .)
-          echo "ARCHIVE=$ARCH" >> $GITHUB_OUTPUT
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: IosevkaCustom_${{ steps.get-version.outputs.VERSION }}
-          path: ${{ steps.make-archive.outputs.ARCHIVE }}
+          path: Iosevka/dist/IosevkaCustom
           compression-level: 8
           retention-days: 60
