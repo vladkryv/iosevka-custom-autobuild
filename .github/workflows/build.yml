@@ -85,7 +85,7 @@ jobs:
           mv archive/IosevkaMyCustom_${{ steps.latest-archive.outputs.VERSION }}.zip ./
 
           cd archive
-          ls -t IosevkaMyCustom_*.zip | tail -n +10 | xargs rm -f 2>/dev/null
+          ls -t IosevkaMyCustom_*.zip | tail -n +5 | xargs rm -f 2>/dev/null
 
       - name: Cleanup
         if: steps.check-tag.outputs.NEW_TAG == 'true'
