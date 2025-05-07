@@ -2,6 +2,15 @@ name: Build Custom Iosevka Font (Dev)
 
 on:
   workflow_dispatch:
+    inputs:
+      spacing:
+        description: 'Font spacing (normal or quasi-proportional)'
+        required: false
+        default: 'normal'
+        type: choice
+        options:
+          - normal
+          - quasi-proportional
 
 jobs:
   build-dev:
@@ -33,6 +42,12 @@ jobs:
           curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ github.ref_name }}/private-build-plans.toml" \
             -o private-build-plans.toml
+
+      - name: Adjust spacing if needed
+        if: ${{ github.event.inputs.spacing == 'quasi-proportional' }}
+        working-directory: Iosevka
+        run: |
+          sed -i.bak 's/spacing = "normal"/spacing = "quasi-proportional"/' private-build-plans.toml && rm private-build-plans.toml.bak
 
       - name: Build custom font
         working-directory: Iosevka
