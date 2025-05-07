@@ -11,6 +11,7 @@ on:
         options:
           - normal
           - quasi-proportional
+          - quasi-proportional-extension-only
 
 jobs:
   build-dev:
@@ -44,10 +45,10 @@ jobs:
             -o private-build-plans.toml
 
       - name: Adjust spacing if needed
-        if: ${{ github.event.inputs.spacing == 'quasi-proportional' }}
+        if: ${{ github.event.inputs.spacing != 'normal' }}
         working-directory: Iosevka
         run: |
-          sed -i.bak 's/spacing = "normal"/spacing = "quasi-proportional"/' private-build-plans.toml && rm private-build-plans.toml.bak
+          sed -i.bak 's/spacing = "normal"/spacing = "${{ github.event.inputs.spacing }}"/' private-build-plans.toml && rm private-build-plans.toml.bak
 
       - name: Build custom font
         working-directory: Iosevka
