@@ -50,11 +50,11 @@ jobs:
         working-directory: Iosevka
         run: |
           if [ "${{ github.event.inputs.spacing }}" = "normal-texture-feature" ]; then
-            sed -i.bak '/spacing = "normal"/a\
-buildTextureFeature = true' private-build-plans.toml && rm private-build-plans.toml.bak
+            sed -i.bak $'/spacing = "normal"/a\\\nbuildTextureFeature = true' private-build-plans.toml && rm private-build-plans.toml.bak
           else
             sed -i.bak 's/spacing = "normal"/spacing = "${{ github.event.inputs.spacing }}"/' private-build-plans.toml && rm private-build-plans.toml.bak
           fi
+
 
       - name: Build custom font
         working-directory: Iosevka
