@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - normal
+          - normal-texture-feature
           - quasi-proportional
           - quasi-proportional-extension-only
 
@@ -48,7 +49,11 @@ jobs:
         if: ${{ github.event.inputs.spacing != 'normal' }}
         working-directory: Iosevka
         run: |
-          sed -i.bak 's/spacing = "normal"/spacing = "${{ github.event.inputs.spacing }}"/' private-build-plans.toml && rm private-build-plans.toml.bak
+          if [ "${{ github.event.inputs.spacing }}" = "normal-texture-feature" ]; then
+            sed -i.bak '/spacing = "normal"/a buildTextureFeature = true' private-build-plans.toml && rm private-build-plans.toml.bak
+          else
+            sed -i.bak 's/spacing = "normal"/spacing = "${{ github.event.inputs.spacing }}"/' private-build-plans.toml && rm private-build-plans.toml.bak
+          fi
 
       - name: Build custom font
         working-directory: Iosevka
