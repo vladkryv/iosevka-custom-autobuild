@@ -1,0 +1,101 @@
+name: Build Custom Iosevka Font
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      always:
+        description: 'Build even without new version'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  check-and-build:
+    runs-on: macos-latest
+    steps:
+      - name: Check for new Iosevka tag
+        id: check-tag
+        run: |
+          LATEST_TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/be5invis/Iosevka/tags | jq -r '.[0].name')
+          echo "Latest Iosevka tag: $LATEST_TAG"
+          LATEST_VERSION=$(echo $LATEST_TAG | sed 's/v//')
+
+          CURRENT_ARCHIVE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/contents/ | jq -r '.[] | select(.name | test("IosevkaMyCustom_.*\\.zip")) | .name' | head -n 1)
+          if [ -n "$CURRENT_ARCHIVE" ]; then
+            CURRENT_VERSION=$(echo $CURRENT_ARCHIVE | sed -E 's/IosevkaMyCustom_(.*)\.zip/\1/')
+          else
+            CURRENT_VERSION=""
+          fi
+
+          if [ -z "$CURRENT_VERSION" ] || [ "$LATEST_VERSION" != "$CURRENT_VERSION" ] || [ "${{ inputs.always }}" == "true" ]; then
+            echo "NEW_TAG=true" >> $GITHUB_OUTPUT
+            echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "No new version to build."
+          fi
+
+      - name: Checkout own repository
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install ttfautohint
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: brew install ttfautohint
+
+      - name: Clone Iosevka repository
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          git clone --depth 1 --branch ${{ steps.check-tag.outputs.LATEST_TAG }} https://github.com/be5invis/Iosevka.git
+
+      - name: Copy private-build-plans.toml
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: cp private-build-plans.toml Iosevka/
+
+      - name: Build custom font
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        working-directory: Iosevka
+        run: |
+          npm install
+          npm run build -- ttf::IosevkaCustom
+
+      - name: Create archive
+        id: latest-archive
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          VERSION=$(echo ${{ steps.check-tag.outputs.LATEST_TAG }} | sed 's/v//')
+          rm -f IosevkaMyCustom_${VERSION}.zip
+          (cd Iosevka/dist/IosevkaCustom && zip -8 -r ../../../IosevkaMyCustom_${VERSION}.zip *)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Manage archives
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          mkdir -p archive
+          mv IosevkaMyCustom_*.zip archive/
+          mv archive/IosevkaMyCustom_${{ steps.latest-archive.outputs.VERSION }}.zip ./
+
+          cd archive
+          ls -t IosevkaMyCustom_*.zip | tail -n +5 | xargs rm -f 2>/dev/null
+
+      - name: Cleanup
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: rm -rf Iosevka
+
+      - name: Commit and push changes
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Github Actions"
+          git add .
+          git commit -m "Add new Iosevka custom build ${{ steps.check-tag.outputs.LATEST_TAG }}"
+          git push

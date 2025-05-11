@@ -1,0 +1,70 @@
+name: Build Custom Iosevka Font (Dev)
+
+on:
+  workflow_dispatch:
+    inputs:
+      spacing:
+        description: 'Font spacing (normal or quasi-proportional)'
+        required: false
+        default: 'normal'
+        type: choice
+        options:
+          - normal
+          - normal-texture-feature
+          - quasi-proportional
+          - quasi-proportional-extension-only
+
+jobs:
+  build-dev:
+    runs-on: macos-latest
+
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install ttfautohint
+        run: brew install ttfautohint
+
+      - name: Clone Iosevka dev branch
+        run: |
+          git clone --depth 1 --branch dev https://github.com/be5invis/Iosevka.git
+
+      - name: Get version from package.json
+        working-directory: Iosevka
+        id: get-version
+        run: |
+          VERSION="$(jq -r '.version' package.json)-dev"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download private-build-plans.toml
+        working-directory: Iosevka
+        run: |
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ github.ref_name }}/private-build-plans.toml" \
+            -o private-build-plans.toml
+
+      - name: Adjust spacing if needed
+        if: ${{ github.event.inputs.spacing != 'normal' }}
+        working-directory: Iosevka
+        run: |
+          if [ "${{ github.event.inputs.spacing }}" = "normal-texture-feature" ]; then
+            sed -i.bak $'/spacing = "normal"/a\\\nbuildTextureFeature = true\n' private-build-plans.toml && rm private-build-plans.toml.bak
+          else
+            sed -i.bak 's/spacing = "normal"/spacing = "${{ github.event.inputs.spacing }}"/' private-build-plans.toml && rm private-build-plans.toml.bak
+          fi
+
+      - name: Build custom font
+        working-directory: Iosevka
+        run: |
+          npm install
+          npm run build -- ttf::IosevkaCustom
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IosevkaCustom_${{ steps.get-version.outputs.VERSION }}
+          path: Iosevka/dist/IosevkaCustom
+          compression-level: 8
+          retention-days: 60
