@@ -1,6 +1,7 @@
 [buildPlans.IosevkaCustom]
 family = "Iosevka Custom"
 spacing = "normal"
+buildTextureFeature = true
 serifs = "sans"
 noCvSs = true
 

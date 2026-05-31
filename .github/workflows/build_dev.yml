@@ -10,7 +10,6 @@ on:
         type: choice
         options:
           - normal
-          - normal-texture-feature
           - quasi-proportional
           - quasi-proportional-extension-only
 
@@ -44,16 +43,6 @@ jobs:
           curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ github.ref_name }}/private-build-plans.toml" \
             -o private-build-plans.toml
-
-      - name: Adjust spacing if needed
-        if: ${{ github.event.inputs.spacing != 'normal' }}
-        working-directory: Iosevka
-        run: |
-          if [ "${{ github.event.inputs.spacing }}" = "normal-texture-feature" ]; then
-            sed -i.bak $'/spacing = "normal"/a\\\nbuildTextureFeature = true\n' private-build-plans.toml && rm private-build-plans.toml.bak
-          else
-            sed -i.bak 's/spacing = "normal"/spacing = "${{ github.event.inputs.spacing }}"/' private-build-plans.toml && rm private-build-plans.toml.bak
-          fi
 
       - name: Build custom font
         working-directory: Iosevka
