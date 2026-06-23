@@ -38,7 +38,7 @@ jobs:
 
       - name: Checkout own repository
         if: steps.check-tag.outputs.NEW_TAG == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -50,7 +50,7 @@ jobs:
 
       - name: Install ttfautohint
         if: steps.check-tag.outputs.NEW_TAG == 'true'
-        run: brew install ttfautohint
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install ttfautohint coreutils
 
       - name: Clone Iosevka repository
         if: steps.check-tag.outputs.NEW_TAG == 'true'
@@ -85,7 +85,7 @@ jobs:
           mv archive/IosevkaMyCustom_${{ steps.latest-archive.outputs.VERSION }}.zip ./
 
           cd archive
-          ls -t IosevkaMyCustom_*.zip | tail -n +5 | xargs rm -f 2>/dev/null
+          ls -1 IosevkaMyCustom_*.zip | gsort -rV | tail -n +5 | xargs rm -f 2>/dev/null || true
 
       - name: Cleanup
         if: steps.check-tag.outputs.NEW_TAG == 'true'
