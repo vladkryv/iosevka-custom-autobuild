@@ -42,20 +42,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clone Iosevka repository
+        if: steps.check-tag.outputs.NEW_TAG == 'true'
+        run: |
+          git clone --depth 1 --branch ${{ steps.check-tag.outputs.LATEST_TAG }} https://github.com/be5invis/Iosevka.git
+
       - name: Setup Node.js
         if: steps.check-tag.outputs.NEW_TAG == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
+          cache: npm
+          cache-dependency-path: Iosevka/package-lock.json
 
       - name: Install ttfautohint
         if: steps.check-tag.outputs.NEW_TAG == 'true'
-        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install ttfautohint coreutils
-
-      - name: Clone Iosevka repository
-        if: steps.check-tag.outputs.NEW_TAG == 'true'
-        run: |
-          git clone --depth 1 --branch ${{ steps.check-tag.outputs.LATEST_TAG }} https://github.com/be5invis/Iosevka.git
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+        run: brew install ttfautohint coreutils
 
       - name: Copy private-build-plans.toml
         if: steps.check-tag.outputs.NEW_TAG == 'true'
@@ -65,7 +70,7 @@ jobs:
         if: steps.check-tag.outputs.NEW_TAG == 'true'
         working-directory: Iosevka
         run: |
-          npm install
+          npm ci
           npm run build -- ttf::IosevkaCustom
 
       - name: Create archive
