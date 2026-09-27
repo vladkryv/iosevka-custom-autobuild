@@ -18,17 +18,19 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: Clone Iosevka dev branch
+        run: |
+          git clone --depth 1 --branch dev https://github.com/be5invis/Iosevka.git
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
+          cache: npm
+          cache-dependency-path: Iosevka/package-lock.json
 
       - name: Install ttfautohint
-        run: brew install ttfautohint
-
-      - name: Clone Iosevka dev branch
-        run: |
-          git clone --depth 1 --branch dev https://github.com/be5invis/Iosevka.git
+        run: HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ttfautohint
 
       - name: Get version from package.json
         working-directory: Iosevka
@@ -44,10 +46,19 @@ jobs:
             "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ github.ref_name }}/private-build-plans.toml" \
             -o private-build-plans.toml
 
+      - name: Adjust spacing if needed
+        if: ${{ github.event.inputs.spacing != 'normal' }}
+        working-directory: Iosevka
+        run: |
+          sed -i.bak \
+            -e 's/spacing = "normal"/spacing = "${{ github.event.inputs.spacing }}"/' \
+            -e '/buildTextureFeature = true/d' \
+            private-build-plans.toml && rm private-build-plans.toml.bak
+
       - name: Build custom font
         working-directory: Iosevka
         run: |
-          npm install
+          npm ci
           npm run build -- ttf::IosevkaCustom
 
       - name: Upload artifact
